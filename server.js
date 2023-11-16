@@ -24,7 +24,8 @@ const init=()=>{
 }
 
 const getData=()=>{
-    app.get('/:index',(req,res)=>{
+    app.get('/test',(req,res)=>{
+        console.log('getting')
         pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
         .then(result=>{
             res.send(result.rows)}
