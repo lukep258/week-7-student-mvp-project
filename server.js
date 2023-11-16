@@ -13,12 +13,23 @@ console.log(process.env.port)
 
 const init=()=>{
     app.use((req,res,next)=>{//test request console
-        console.log(req.method,req.body,req.url)
-        res.send('good test')
+        console.log(req.url,req.method,req.body)
+        next()
     })
+
+    getData()
 
     app.use(express.static('public'))
     app.listen(port,()=>{console.log(`listening on ${port}`)})
+}
+
+const getData=()=>{
+    app.get('/:index',(req,res)=>{
+        pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
+        .then(result=>{
+            res.send(result.rows)}
+        )        
+    })
 }
 
 const newPool=()=>{
@@ -34,5 +45,5 @@ const newPool=()=>{
     return pool
 }
 
-const pool = newPool
+const pool = newPool()
 init()
