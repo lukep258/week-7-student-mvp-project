@@ -4,12 +4,10 @@ import pg from 'pg'
 import dotenv from 'dotenv'
 
 dotenv.config()
-
 const app = express()
 const port = process.env.PORT
 app.use(cors())
 app.use(express.json())
-console.log(process.env.port)
 
 const init=()=>{
     app.use((req,res,next)=>{//test request console
@@ -29,7 +27,7 @@ const getData=()=>{
         pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
         .then(result=>{
             res.send(result.rows)}
-        )        
+        )
     })
 }
 
