@@ -1,11 +1,15 @@
 import express from 'express'
 import cors from 'cors'
 import pg from 'pg'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const app = express()
-const port = process.env.port
+const port = process.env.PORT
 app.use(cors())
 app.use(express.json())
+console.log(process.env.port)
 
 const init=()=>{
     app.use((req,res,next)=>{//test request console
