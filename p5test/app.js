@@ -1,10 +1,13 @@
 
 var fruitTypes = {
     cherry:{
-        points:2,
+        weight:2,
         size:50
     },
-    strawberry:4,
+    strawberry:{
+        weight:4,
+        size:80
+    },
     grape:6,
     tangerine:8,
     orange:12,
@@ -90,11 +93,11 @@ function droppedFruit(x,type){
         this.pos.add(this.v)
         if(this.pos.x<this.r){
             this.pos.x=this.r
-            this.v.x=-this.r.x
+            this.v.x=-this.r.x*0.2
         }
         if(this.pos.x>width-this.r){
             this.pos.x=width-this.r
-            this.v.x=-this.v.x
+            this.v.x=-this.v.x*0.2
         }
         if(this.pos.y<this.r){
             this.pos.y=this.r
@@ -110,16 +113,17 @@ function droppedFruit(x,type){
         if(other==this){
             return
         }
-        let relative=p5.Vector.sub(other.pos,this.pos)
-        let d = relative.mag()-(this.r+other.r)
-        if(d<0){
-            let movement=relative.copy().setMag(abs(d/2))
-            this.pos.sub(movement)
-            other.pos.add(movement)
-
-            let thisToOtherNormal=relative.copy().normalize()
-            let approachSpeed=this.v.dot(thisToOtherNormal)+-other.v.dot(thisToOtherNormal)
-            let approachVector=thisToOtherNormal.copy().setMag(approachSpeed)
+        let dVector=p5.Vector.sub(other.pos,this.pos)
+        let d = dVector.mag()-(this.r+other.r)
+        if(d<1){
+            let weightRatio=this.typeObj.weight/(this.typeObj.weight+other.typeObj.weight)
+            let thisDisp=dVector.copy().setMag(abs(d*weightRatio))
+            let otherDisp=dVector.copy().setMag(abs(d*(1-weightRatio)))
+            this.pos.sub(thisDisp)
+            other.pos.add(otherDisp)
+            let dVectorNormal=dVector.copy().normalize()
+            let approachSpeed=this.v.dot(dVectorNormal)+-other.v.dot(dVectorNormal)
+            let approachVector=dVectorNormal.copy().setMag(approachSpeed*0.3)
             this.v.sub(approachVector)
             other.v.add(approachVector)
         }
@@ -136,5 +140,5 @@ function droppedFruit(x,type){
 }
 
 const randomFruit=()=>{
-    return Object.keys(fruitTypes)[Math.floor(Math.random()*fruitTypes.max)]
+    return Object.keys(fruitTypes)[random(fruitTypes.max)]
 }
