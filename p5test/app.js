@@ -46,24 +46,29 @@ var fruitTypes = {
     }
 }
 let max = 0
-let screen = 'menu'
+let screen = 'game'
+var nextFruit = {}
 var fruitHand = {}
 var fruitsDropped = []
+var score = 0
 
 
 function preload(){
     for(let key in fruitTypes){
         fruitTypes[key].image=loadImage(`../assets/${key}.png`)
+        fruitTypes[key].nextImage=loadImage(`../assets/${key}.png`)
     }
 }
 
 
 function setup(){
-    createCanvas(700,1050)
+    createCanvas(700,1150)
     for(let key in fruitTypes){
         fruitTypes[key].image.resize(fruitTypes[key].size,fruitTypes[key].size)
+        fruitTypes[key].nextImage.resize(60,60)
     }
     fruitHand=new handyFruit(randomFruit())
+    nextFruit=randomFruit()
 }
 
 
@@ -80,6 +85,7 @@ async function draw(){
         case 'lobbyWait':
             break;
         case 'game':
+            await fruitGame()
             break;
     }
 }
@@ -106,7 +112,7 @@ function mouseClicked(){
 function handyFruit(type){
     this.type=type
     this.typeObj={...fruitTypes[type]}
-    this.pos=createVector(mouseX,78.75)
+    this.pos=createVector(mouseX,178.75)
     this.r=this.typeObj.size/2
 
     this.show=function(){
@@ -192,8 +198,8 @@ function droppedFruit(x,y,type){
                 other.v.add(otherVector)
             }
             else{
-                this.v.add(thisVector.setMag(approachSpeed*0.2))
-                other.v.sub(otherVector.setMag(approachSpeed*0.2))
+                this.v.add(thisVector.setMag(approachSpeed*0.1))
+                other.v.sub(otherVector.setMag(approachSpeed*0.1))
                 this.merge(other,thisIndex,otherIndex)
             }
         }
@@ -205,7 +211,7 @@ function droppedFruit(x,y,type){
         }
 
         var d=p5.Vector.dist(this.pos,other.pos)
-        if (d<this.r/2&&this.type===other.type){
+        if (d<this.r*0.75&&this.type===other.type){
             const fruitTypeArr=Object.keys(fruitTypes)
             const typeIndex=fruitTypeArr.indexOf(this.type)
             const middle=[(this.pos.x+other.pos.x)/2,(this.pos.y+other.pos.y)/2]
@@ -221,8 +227,9 @@ function droppedFruit(x,y,type){
             if(typeIndex===max&&max<4){
                 max++
             }
+            score+=this.typeObj.weight
             fruitsDropped.unshift(new droppedFruit(middle[0],middle[1],fruitTypeArr[typeIndex+1]))
-            console.log(fruitsDropped)
+            console.log(fruitsDropped,score)
         }
     }
 }
@@ -232,16 +239,38 @@ const randomFruit=()=>{
 }
 
 const menu=()=>{
-    
+    text('Suika Multiplayer',width/2-40,height/2-80)
+    textSize()
+    const search = rect(width/2-100,height/2-40,200,80,25,25,25,25)
+    search.fill(0)
+    const join = rect(width/2-100,height/2+80,200,80,25,25,25,25)
+    join.fill(100)
 }
 
 const fruitDrop=()=>{
-    fruitsDropped.push(new droppedFruit(fruitHand.pos.x,78.75,fruitHand.type))
+    fruitsDropped.push(new droppedFruit(fruitHand.pos.x,178.75,fruitHand.type))
     fruitHand = undefined
-    setTimeout(() => {fruitHand = new handyFruit(randomFruit())}, 1000);
+    setTimeout(() => {fruitHand = new handyFruit(nextFruit)}, 1000);
+    nextFruit=randomFruit()
 }
 
-const fruitGame=()=>{
+const fruitGame=async ()=>{
+    fill(179, 179, 179)
+    strokeWeight(2)
+    stroke(0)
+    rect(width-125,25,100,100,25,25,25,25)
+    textSize(30)
+    fill(255)
+    stroke(0)
+    strokeWeight(3)
+    text('next',width-113,50)
+    textSize(50)
+    fill(26, 255, 0)
+    stroke(0, 60, 255)
+    strokeWeight(10)
+    textFont('arial')
+    text(score,25,60)
+    image(fruitTypes[nextFruit].nextImage,width-105,55)
     if(fruitHand){
         fruitHand.show()
     }
