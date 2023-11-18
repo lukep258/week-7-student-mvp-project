@@ -69,17 +69,18 @@ function setup(){
     }
     fruitHand=new handyFruit(randomFruit())
     nextFruit=randomFruit()
+    noLoop()
 }
 
 
-async function draw(){    
-    background(230, 176, 78)
+async function draw(){  
+    background(230, 176, 78)  
     switch(screen){
         case 'menu':
             menu()
             break;
         case 'lobbySearch':
-            lobbyList()
+            await lobbyList()
             break;
         case 'lobbyCreate':
             break;
@@ -98,6 +99,7 @@ function mouseClicked(){
     switch(screen){
         case 'menu':
             menuSelect()
+            noLoop()
             break;
         case 'lobbySearch':
             break;
@@ -265,7 +267,7 @@ const menu=()=>{
     image(fruitTypes.strawberry.image,width/2+200,height/2-175)
     image(fruitTypes.cherry.image,width/2-150,height/2-150)
     image(fruitTypes.cherry.image,width/2-300,height/2-150)
-    image(fruitTypes.cherry.image,width/2+150,height/2-150)   
+    image(fruitTypes.cherry.image,width/2+150,height/2-150) 
 }
 
 const menuSelect=()=>{
@@ -275,11 +277,24 @@ const menuSelect=()=>{
     if(mouseX>width/2-100&&mouseX<width/2+100&&mouseY>height/2+90&&mouseY<height/2+170){
         screen='lobbyJoin'
     }
+    loop()
 }
 
-const lobbyList=()=>{
-    httpGet()
-
+const lobbyList=async()=>{
+    let lobby=[]
+    await httpGet('/lobby','json',(res)=>{
+        lobby=[...res]
+    })
+    .then(()=>{
+        for(let i=0;i<lobby.length;i++){
+            console.log(i)
+            stroke(0)
+            strokeWeight(10)
+            line(0,226.75+(i*100),700,226.75+(i*100))
+            line(0,226.75+100+(i*100),700,226.75+100+(i*100))
+        }
+    })
+    
 }
 
 const fruitDrop=()=>{
@@ -289,7 +304,7 @@ const fruitDrop=()=>{
     nextFruit=randomFruit()
 }
 
-const fruitGame=async ()=>{
+const fruitGame=async()=>{
     fill(179, 179, 179)
     strokeWeight(2)
     stroke(0)
@@ -329,4 +344,5 @@ const fruitGame=async ()=>{
             await fruitsDropped[i].collide(fruitsDropped[j],i,j)
         }
     }
+    loop()
 }

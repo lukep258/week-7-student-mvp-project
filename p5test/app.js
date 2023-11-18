@@ -46,7 +46,7 @@ var fruitTypes = {
     }
 }
 let max = 0
-let screen = 'menu'
+let screen = 'game'
 var nextFruit = {}
 var fruitHand = {}
 var fruitsDropped = []

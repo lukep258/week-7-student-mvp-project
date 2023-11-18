@@ -14,20 +14,33 @@ const init=()=>{
         console.log(req.url,req.method,req.body)
         next()
     })
+    app.use(express.static('public'))
 
     getData()
 
-    app.use(express.static('public'))
     app.listen(port,()=>{console.log(`listening on ${port}`)})
 }
 
 const getData=()=>{
-    app.get('/test',(req,res)=>{
-        console.log('getting')
-        pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
-        .then(result=>{
-            res.send(result.rows)}
-        )
+    app.get(/^\/(.*)$/,(req,res)=>{
+        const paramsArr=req.params['0'].split('/')
+        console.log(paramsArr)
+        switch(paramsArr[0]){
+            case 'assets':
+                res.sendFile(`./assets/${paramsArr[1]}`,{root:'./'})
+                break;
+            case 'lobby':
+                pool.query('select * from curr_lobby')
+                .then(result=>{res.send(result.rows)})
+                break;
+            case 'test':
+                pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
+                .then(result=>{
+                    res.send(result.rows)}
+                )
+                break;
+
+        }
     })
 }
 
