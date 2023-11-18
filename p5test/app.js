@@ -46,7 +46,7 @@ var fruitTypes = {
     }
 }
 let max = 0
-let screen = 'game'
+let screen = 'menu'
 var nextFruit = {}
 var fruitHand = {}
 var fruitsDropped = []
@@ -242,7 +242,6 @@ const menu=()=>{
     text('Suika Multiplayer',width/2-40,height/2-80)
     textSize()
     const search = rect(width/2-100,height/2-40,200,80,25,25,25,25)
-    search.fill(0)
     const join = rect(width/2-100,height/2+80,200,80,25,25,25,25)
     join.fill(100)
 }
