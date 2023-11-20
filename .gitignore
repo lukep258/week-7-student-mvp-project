@@ -1,2 +1,4 @@
 node_modules
 .env
+./p5test
+p5test

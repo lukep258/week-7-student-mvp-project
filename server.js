@@ -25,13 +25,17 @@ const init=()=>{
 
     socketEvents()
 
+
     getData()
     postData()
     // patchData()
 
+
     server.listen(port,()=>{console.log(`listening on ${port}`)})
 }
 
+
+//express routes
 const getData=()=>{
     app.get('*',(req,res)=>{
         const paramsArr=req.url.split('/')
@@ -76,19 +80,25 @@ const postData=()=>{
     })
 }
 
-// const patchData=()=>{
-//     app.put(/^\/.*$/,(req,res)=>{
-//         const paramsArr=req.url.split('/')
-//         switch(paramsArr[1]){
-//             case 'lobby':
-//                 pool.query(`update players set lID=${req.body.lobby} where name='${req.body.player}' returning *`)
-//                 .then(result=>{
-//                     res.send(result.rows)
-//                 })
-//         }
-//     })
-// }
+/*
+const patchData=()=>{
+    app.put(/^\/.*$/,(req,res)=>{
+        const paramsArr=req.url.split('/')
+        switch(paramsArr[1]){
+            case 'lobby':
+                pool.query(`update players set lID=${req.body.lobby} where name='${req.body.player}' returning *`)
+                .then(result=>{
+                    res.send(result.rows)
+                })
+        }
+    })
+} */
 
+
+
+
+
+//socket event handling
 const socketEvents=()=>{
     io.on('connection',(socket)=>{
         console.log('user connected')
@@ -148,6 +158,8 @@ const socketEvents=()=>{
     })
 }
 
+
+//helper functions
 const lobbyDoor=(direction,lid,soInst,ioInst)=>{
     const room=lid.toString()
     if(direction==='enter'){
@@ -187,5 +199,7 @@ const newPool=()=>{
     return pool
 }
 
+
+//execution
 const pool = newPool()
 init()

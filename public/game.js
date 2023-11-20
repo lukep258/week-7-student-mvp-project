@@ -74,7 +74,7 @@ function preload(){
     refresh=loadImage('./assets/refresh.png')
 }
 
-
+//p5 functions
 function setup(){
     var cnv = createCanvas(700,1150)
     cnv.attribute('class','game')
@@ -157,6 +157,8 @@ function mouseClicked(){
 }
 
 
+
+//constructor-type functions
 function handyFruit(type){
     this.type=type
     this.typeObj={...fruitTypes[type]}
@@ -283,10 +285,8 @@ function droppedFruit(x,y,type){
     }
 }
 
-const randomFruit=()=>{
-    return Object.keys(fruitTypes)[Math.round(random(max))]
-}
 
+//user page
 const setUser=()=>{
     createRect(width/2-65,height/2-30,width/2+65,height/2+10,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
     createText(width/2,height/2-100,'Enter Username:',50)
@@ -313,6 +313,8 @@ const enterUser=()=>{
     }
 }
 
+
+//main menu
 const menu=()=>{
     createRect(0,0,width,height/3,undefined,[0, 208, 255])
     strokeWeight(1)
@@ -350,6 +352,8 @@ const menuSelect=()=>{
     loop()
 }
 
+
+//lobby browser
 const lobbyList=async()=>{
     createBack()
     createRect(50,125,650,875,undefined,[237, 191, 107])
@@ -412,6 +416,8 @@ const lobbySelect=()=>{
     }
 }
 
+
+//join lobby ID
 const typeLID=()=>{
     createBack()
     createRect(100,170,300,210,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
@@ -449,6 +455,8 @@ const joinLID=()=>{
     }
 }
 
+
+//create lobby
 const lobbySettings=()=>{
     createBack()
     createRect(250,175,410,210,undefined,[184, 141, 62],undefined,0)
@@ -525,6 +533,8 @@ const createLobby=()=>{
     }
 }
 
+
+//lobby
 const waiting=()=>{
     httpGet(`./players/${lobbyID}`,'json',(data)=>{
         console.log(data)
@@ -570,11 +580,17 @@ const startGame=()=>{
     }
 }
 
+
+//game
 const fruitDrop=()=>{
     fruitsDropped.unshift(new droppedFruit(fruitHand.pos.x,178.75,fruitHand.type))
     fruitHand = undefined
     setTimeout(() => {fruitHand = new handyFruit(nextFruit)}, 1500);
     nextFruit=randomFruit()
+}
+
+const randomFruit=()=>{
+    return Object.keys(fruitTypes)[Math.round(random(max))]
 }
 
 const fruitGame=async()=>{
@@ -612,6 +628,8 @@ const fruitGame=async()=>{
     loop()
 }
 
+
+//post-game
 const gameOver=()=>{
     createRect(width/2-100,height/2-230,width/2+100,height/2-190,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
     createText(width/2,height/2,'GAME\nOVER',200)
@@ -629,6 +647,8 @@ const nextGame=()=>{
     }
 }
 
+
+//shape/element helper functions
 const createRect=(x1,y1,x2,y2,[tlr,trr,brr,blr]=[0,0,0,0],[fr,fg,fb]=[0,0,0],[br,bg,bb]=[0,0,0],bWeight=1)=>{
     fill(fr,fg,fb)
     stroke(br,bg,bb)
@@ -664,6 +684,8 @@ const createBack=()=>{
     createTri(25,45,55,25,55,65)
 }
 
+
+//socket events
 socket.on('newLobby',(message)=>{
     console.log(screen==='lobbySearch')
     if(screen==='lobbySearch'){
