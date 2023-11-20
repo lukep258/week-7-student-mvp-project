@@ -142,7 +142,7 @@ const socketEvents=()=>{
             pool.query(`select * from players where lID=${lid} order by currP desc`)
             .then((result)=>{
                 console.log(result.rows)
-                io.to(lid.toString()).emit('update',result.rows,fruit)
+                socket.to(lid.toString()).emit('update',result.rows,fruit)
             })
         })
     })
@@ -168,7 +168,6 @@ const lobbyDoor=(direction,lid,soInst,ioInst)=>{
                 pool.query(`update curr_lobby set pCount=pCount-1 where id=${lid}`)
                 pool.query(`update players set lID=NULL where sessID='${soInst.id}'`)
                 console.log(soInst)
-                soInst.leave(room)
                 ioInst.to(room).emit('lChange')
             }
         })

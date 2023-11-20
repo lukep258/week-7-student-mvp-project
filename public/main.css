@@ -4,3 +4,31 @@
     font-size:30px;
     text-align:center;
 }
+
+#title{
+    text-wrap: nowrap;
+    width:100%;
+    height:15vh;
+    text-align:left;
+    padding-left:1%;
+    font-size: 3vh;
+    position:fixed;
+    font-family:'Berthold Akzidenz Condensed';
+    font-style: italic;
+    background:beige;
+    margin-top:87vh;
+}
+
+img{
+    margin-left:40%;
+    display:flex;
+    position:fixed;
+}
+
+body{
+    margin:0;
+    background-repeat:no-repeat;
+    height:100vh;
+    background-size:cover;
+    background-image:url('https://assets.nintendo.com/image/upload/ar_16:9,c_lpad,w_1240/b_white/f_auto/q_auto/ncom/software/switch/70010000074332/f182ea0edd11ce25e3f6b1964186fdd8681b4803afc4c8d78f3d954b906f29da');
+}

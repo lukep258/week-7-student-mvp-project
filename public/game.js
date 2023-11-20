@@ -76,7 +76,8 @@ function preload(){
 
 
 function setup(){
-    createCanvas(700,1150)
+    var cnv = createCanvas(700,1150)
+    cnv.attribute('class','game')
     for(let key in fruitTypes){
         fruitTypes[key].image.resize(fruitTypes[key].size,fruitTypes[key].size)
         fruitTypes[key].nextImage.resize(60,60)
@@ -291,7 +292,7 @@ const setUser=()=>{
     createText(width/2,height/2-100,'Enter Username:',50)
     createText(width/2,height/2,'Continue',30)
 
-    input1 = createInput().position(width/2-150,height/2)
+    input1 = createInput().position(width/2-150,displayHeight/2-230)
     input1.attribute('placeholder',`username`)
     input1.addClass('input')
 }
@@ -418,7 +419,7 @@ const typeLID=()=>{
     createText(150,150,'Lobby ID:',30)
     createText(200,200,'Join Lobby',30)
 
-    input3 = createInput().position(260,200)
+    input3 = createInput().position(240,130)
     input3.attribute('placeholder',`enter lobby ID`)
     input3.addClass('input')
 }
@@ -462,7 +463,7 @@ const lobbySettings=()=>{
     createText(155,250,'Private Lobby:',30)
     createText(200,315,'Create Lobby',30)
 
-    input2 = createInput().position(260,200)
+    input2 = createInput().position(260,130)
     input2.attribute('placeholder',`${pName}s lobby`)
     input2.addClass('input')
 }
