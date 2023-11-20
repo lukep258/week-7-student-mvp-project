@@ -14,7 +14,7 @@ create table curr_lobby(
 create table players(
     id serial primary key,
     name varchar,
-    sessID integer,
+    sessID varchar,
     lID integer references curr_lobby(id)
 );
 create table teams(

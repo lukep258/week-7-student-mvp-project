@@ -3,10 +3,14 @@ import cors from 'cors'
 import pg from 'pg'
 import dotenv from 'dotenv'
 import session from 'express-session'
+import http from 'http'
+import { Server } from 'socket.io'
 
 dotenv.config()
 const app = express()
 const port = process.env.PORT
+const server = http.createServer(app)
+const io = new Server(server)
 
 app.use(cors())
 app.use(express.json())
@@ -19,20 +23,13 @@ const init=()=>{
         saveUnitialized:true
     }))
 
-    app.use((req,res,next)=>{//test request console
-        // console.log(req.url,req.method,req.body)
-        next()
-    })
+    socketEvents()
 
     getData()
     postData()
     patchData()
 
-    app.use((req,res,next)=>{
-    })
-    
-
-    app.listen(port,()=>{console.log(`listening on ${port}`)})
+    server.listen(port,()=>{console.log(`listening on ${port}`)})
 }
 
 const getData=()=>{
@@ -56,7 +53,6 @@ const getData=()=>{
                 )
                 break;
             case 'cookie':
-                console.log(req.session)
                 if(!req.session.userID){
                     req.session.userID=uniqueID()
                 }
@@ -68,8 +64,6 @@ const getData=()=>{
 
 const postData=()=>{
     app.post(/^\/.*$/,(req,res)=>{
-        console.log(req.url)
-        console.log(req.body)
         const paramsArr=req.url.split('/')
         switch(paramsArr[1]){
             case 'cookie':
@@ -77,28 +71,22 @@ const postData=()=>{
                 break
             case 'lobby':
                 pool.query(`insert into curr_lobby (name,type,pCount,public) values ('${req.body.name}','${req.body.type}',1,${req.body.public}) returning *`)
-                .then(result=>res.send(result.rows))
-                console.log('new lobby')
-
-                pool.query(`select * from curr_lobby order by id desc limit 1`)
                 .then(result=>{
-                    console.log(result.rows)
+                    res.send(result.rows)
                 })
-                console.log('foreign key updated')
+                io.emit('newLobby')
+                console.log('new lobby')
         }
     })
 }
 
 const patchData=()=>{
     app.put(/^\/.*$/,(req,res)=>{
-        console.log(req.url)
-        console.log(req.body)
         const paramsArr=req.url.split('/')
         switch(paramsArr[1]){
             case 'lobby':
                 pool.query(`update players set lID=${req.body.lobby} where name='${req.body.player}' returning *`)
                 .then(result=>{
-                    console.log(result.rows)
                     res.send(result.rows)
                 })
         }
@@ -108,8 +96,6 @@ const patchData=()=>{
 const setUser=(userID,username)=>{
     pool.query(`select * from players where name='${username}' or sessID=${userID}`)
     .then(result=>{
-        console.log(result.rows)
-        console.log(result.rows.length)
         if(result.rows.length===0){
             pool.query(`insert into players (name,sessID) values ('${username}',${userID})`)
             console.log('new player')
@@ -120,6 +106,34 @@ const setUser=(userID,username)=>{
                 pool.query(`update players set name='${username}' where sessID=${userID}`)
             console.log('user updated')
         }
+    })
+}
+
+const socketEvents=()=>{
+    io.on('connection',(socket)=>{
+        console.log('user connected')
+
+        socket.on('disconnect',(reason)=>{
+            console.log('user disconnected', reason)
+            pool.query(`update players set lID=`)
+        })
+        
+        socket.on('userCreated',(message)=>{
+            console.log(message,socket.id)
+            pool.query(`select * from players where name='${message}' or sessID='${socket.id}'`)
+            .then(result=>{
+                if(result.rows.length===0){
+                    pool.query(`insert into players (name,sessID) values ('${message}','${socket.id}')`)
+                    console.log('new player')
+                }
+                else{
+                    result.rows[0].name===message?
+                        pool.query(`update players set sessID='${socket.id}' where name='${message}'`):
+                        pool.query(`update players set name='${message}' where sessID='${sessID}'`)
+                    console.log('user updated')
+                }
+            })
+        })
     })
 }
 

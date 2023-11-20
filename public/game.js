@@ -1,3 +1,5 @@
+const socket = io();
+
 var fruitTypes = {
     cherry:{
         weight:2,
@@ -48,6 +50,7 @@ var nextFruit = {}
 var fruitHand = {}
 var fruitsDropped = []
 var score = 0
+let refresh
 let max = 0
 let screen = 'user'
 let pName = 'pizza'
@@ -65,6 +68,7 @@ function preload(){
         fruitTypes[key].image=loadImage(`./assets/${key}.png`)
         fruitTypes[key].nextImage=loadImage(`./assets/${key}.png`)
     }
+    refresh=loadImage('./assets/refresh.png')
 }
 
 
@@ -75,6 +79,7 @@ function setup(){
         fruitTypes[key].image.resize(fruitTypes[key].size,fruitTypes[key].size)
         fruitTypes[key].nextImage.resize(60,60)
     }
+    refresh.resize(30,30)
     fruitHand=new handyFruit(randomFruit())
     nextFruit=randomFruit()
 }
@@ -283,7 +288,7 @@ const enterUser=()=>{
         select('input').remove()
         pName = lName
         screen = 'menu'
-        httpPost(`./cookie`,'json',{name:lName},result=>console.log(result))
+        socket.emit('userCreated',lName)
         loop()
     }
     else if(mouseX>width/2-65&&mouseX<width/2+65&&mouseY>height/2-30&&mouseY<height/2+10){
@@ -333,12 +338,14 @@ const lobbyList=async()=>{
     createRect(50,125,650,875,undefined,[237, 191, 107])
     createRect(50,125,650,200,undefined,[199, 147, 52])
     createRect(width-200,50,width-50,100,undefined,[161, 242, 138],undefined,)
+    createRect(width-255,50,width-205,100,undefined,[201, 201, 201])
     createText(70,175,'LobbyID',20,undefined,undefined,undefined,undefined,LEFT)
     createText(250,100,'Lobbies',50)
     createText(200,175,'Name',20,undefined,undefined,undefined,undefined,LEFT)
     createText(450,175,'Players',20,undefined,undefined,undefined,undefined,LEFT)
     createText(550,175,'Type',20,undefined,undefined,undefined,undefined,LEFT)
     createText(width-125,85,'Create Lobby',20,undefined,undefined,undefined,undefined,CENTER)
+    image(refresh,width-245,60)
     await httpGet('/lobby','json',(res)=>{
         let lobby=[...res]
         console.log(lobby)
@@ -357,7 +364,6 @@ const lobbyList=async()=>{
             lobbyArr.push(lobby[i].id)
         }
     })
-    setTimeout(() => {loop()}, 3000);
 }
 
 const lobbySelect=()=>{
@@ -380,6 +386,9 @@ const lobbySelect=()=>{
                 screen='lobbyWait'
             }
         }
+        loop()
+    }
+    else if(mouseX>width-255,mouseX<width-205,mouseY>50,mouseY<100){
         loop()
     }
 }
@@ -533,3 +542,10 @@ const createBack=()=>{
     createRect(20,20,70,70,undefined,[207,207,207])
     createTri(25,45,55,25,55,65)
 }
+
+socket.on('newLobby',(message)=>{
+    console.log(screen==='lobbySearch')
+    if(screen==='lobbySearch'){
+        loop()
+    }
+})
