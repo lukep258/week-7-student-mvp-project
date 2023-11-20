@@ -9,7 +9,7 @@ create table curr_lobby(
     name varchar,
     pCount integer,
     public boolean,
-    type varchar
+    type varchar,
 );
 create table players(
     id serial primary key,

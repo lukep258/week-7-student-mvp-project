@@ -27,7 +27,7 @@ const init=()=>{
 
     getData()
     postData()
-    patchData()
+    // patchData()
 
     server.listen(port,()=>{console.log(`listening on ${port}`)})
 }
@@ -41,23 +41,22 @@ const getData=()=>{
                 break;
             case 'lobby':
                 if(paramsArr[2]){
-                    pool.query(`update curr_lobby set pCount = pCount + 1 where id=${paramsArr[2]}`)
+                    pool.query(`select * from curr_lobby where id=${paramsArr[2]}`)
+                    .then(result=>{res.send(result.rows)})
                 }
-                pool.query('select * from curr_lobby')
+                else{
+                    pool.query('select * from curr_lobby')
+                    .then(result=>{res.send(result.rows)})
+                }
+                break;
+            case 'players':
+                pool.query(`select * from players where lID=${paramsArr[2]}`)
                 .then(result=>{res.send(result.rows)})
                 break;
             case 'test':
                 pool.query('select * from curr_lobby join teams on curr_lobby.id=teams.lID join coop_lb on teams.id=coop_lb.tID')
-                .then(result=>{
-                    res.send(result.rows)}
-                )
+                .then(result=>{res.send(result.rows)})
                 break;
-            case 'cookie':
-                if(!req.session.userID){
-                    req.session.userID=uniqueID()
-                }
-                res.send(`your session id is: ${req.session.userID}`)
-                break
         }
     })
 }
@@ -66,11 +65,8 @@ const postData=()=>{
     app.post(/^\/.*$/,(req,res)=>{
         const paramsArr=req.url.split('/')
         switch(paramsArr[1]){
-            case 'cookie':
-                setUser(req.session.userID,req.body.name)
-                break
             case 'lobby':
-                pool.query(`insert into curr_lobby (name,type,pCount,public) values ('${req.body.name}','${req.body.type}',1,${req.body.public}) returning *`)
+                pool.query(`insert into curr_lobby (name,type,pCount,public,host) values ('${req.body.name}','${req.body.type}',0,${req.body.public},'${req.body.player}') returning *`)
                 .then(result=>{
                     res.send(result.rows)
                 })
@@ -80,42 +76,30 @@ const postData=()=>{
     })
 }
 
-const patchData=()=>{
-    app.put(/^\/.*$/,(req,res)=>{
-        const paramsArr=req.url.split('/')
-        switch(paramsArr[1]){
-            case 'lobby':
-                pool.query(`update players set lID=${req.body.lobby} where name='${req.body.player}' returning *`)
-                .then(result=>{
-                    res.send(result.rows)
-                })
-        }
-    })
-}
-
-const setUser=(userID,username)=>{
-    pool.query(`select * from players where name='${username}' or sessID=${userID}`)
-    .then(result=>{
-        if(result.rows.length===0){
-            pool.query(`insert into players (name,sessID) values ('${username}',${userID})`)
-            console.log('new player')
-        }
-        else{
-            result.rows[0].name===username?
-                pool.query(`update players set sessID=${userID} where name='${username}'`):
-                pool.query(`update players set name='${username}' where sessID=${userID}`)
-            console.log('user updated')
-        }
-    })
-}
+// const patchData=()=>{
+//     app.put(/^\/.*$/,(req,res)=>{
+//         const paramsArr=req.url.split('/')
+//         switch(paramsArr[1]){
+//             case 'lobby':
+//                 pool.query(`update players set lID=${req.body.lobby} where name='${req.body.player}' returning *`)
+//                 .then(result=>{
+//                     res.send(result.rows)
+//                 })
+//         }
+//     })
+// }
 
 const socketEvents=()=>{
     io.on('connection',(socket)=>{
         console.log('user connected')
 
         socket.on('disconnect',(reason)=>{
-            console.log('user disconnected', reason)
-            pool.query(`update players set lID=`)
+            pool.query(`select * from players where sessID='${socket.id}'`)
+            .then(result=>{
+                if(result.rows.length!==0){
+                    lobbyDoor('exit',result.rows[0].lid,socket.id)
+                }
+            })
         })
         
         socket.on('userCreated',(message)=>{
@@ -123,22 +107,72 @@ const socketEvents=()=>{
             pool.query(`select * from players where name='${message}' or sessID='${socket.id}'`)
             .then(result=>{
                 if(result.rows.length===0){
-                    pool.query(`insert into players (name,sessID) values ('${message}','${socket.id}')`)
+                    pool.query(`insert into players (name,sessID,currP) values ('${message}','${socket.id}',0)`)
                     console.log('new player')
                 }
                 else{
                     result.rows[0].name===message?
                         pool.query(`update players set sessID='${socket.id}' where name='${message}'`):
-                        pool.query(`update players set name='${message}' where sessID='${sessID}'`)
+                        pool.query(`update players set name='${message}' where sessID='${socket.id}'`)
                     console.log('user updated')
                 }
+            })
+        })
+
+        socket.on('lobbyJoin',(lID)=>{
+            lobbyDoor('enter',lID,socket,io)
+
+        })
+        socket.on('lobbyLeave',(lid)=>{
+            console.log(socket,'socket')
+            lobbyDoor('exit',lid,socket,io)
+        })
+        socket.on('kickPlease',(lid)=>{
+            socket.leave(lid.toString())
+        })
+        socket.on('startGame',(lid)=>{
+            pool.query(`select * from players where lID=${lid} order by currP desc`)
+            .then((result)=>{
+                console.log(result.rows)
+                io.to(lid.toString()).emit('startGame',result.rows)
+            })
+        })
+        socket.on('update',(lid,score,fruit)=>{
+            pool.query(`update players set currP=${score} where sessID='${socket.id}'`)
+            pool.query(`select * from players where lID=${lid} order by currP desc`)
+            .then((result)=>{
+                console.log(result.rows)
+                io.to(lid.toString()).emit('update',result.rows,fruit)
             })
         })
     })
 }
 
-const uniqueID=()=>{
-    return Math.floor(Math.random()*(10**8))
+const lobbyDoor=(direction,lid,soInst,ioInst)=>{
+    const room=lid.toString()
+    if(direction==='enter'){
+        pool.query(`update curr_lobby set pCount = pCount + 1 where id=${lid}`)
+        pool.query(`update players set lID=${lid} where sessID='${soInst.id}'`)
+        soInst.join(room)
+        ioInst.to(room).emit('lChange')
+    }
+    else if(direction==='exit'){
+        pool.query(`select * from players join curr_lobby on players.name=curr_lobby.host where players.sessID='${soInst.id}'`)
+        .then(result=>{
+            if(result.rows.length===1){
+                pool.query(`update players set lID=NULL where lid=${result.rows[0].lid}`)
+                pool.query(`delete from curr_lobby where id=${result.rows[0].lid}`)
+                ioInst.to(room).emit('lDelete',result.rows[0].lid)
+            }
+            else{
+                pool.query(`update curr_lobby set pCount=pCount-1 where id=${lid}`)
+                pool.query(`update players set lID=NULL where sessID='${soInst.id}'`)
+                console.log(soInst)
+                soInst.leave(room)
+                ioInst.to(room).emit('lChange')
+            }
+        })
+    }
 }
 
 const newPool=()=>{

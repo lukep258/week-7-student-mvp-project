@@ -9,12 +9,14 @@ create table curr_lobby(
     name varchar,
     pCount integer,
     public boolean,
-    type varchar
+    type varchar,
+    host varchar
 );
 create table players(
     id serial primary key,
     name varchar,
     sessID varchar,
+    currP integer,
     lID integer references curr_lobby(id)
 );
 create table teams(

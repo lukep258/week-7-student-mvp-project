@@ -56,11 +56,14 @@ let screen = 'user'
 let pName = 'pizza'
 let lobbyType = 'comp'
 let public = true;
-let lobbyArr = []
 let input1
 let input2
+let input3
 let players = []
-let lobbyID = 3
+let lobbyID = 14
+let host = false
+let place = 0
+let otherScores=[]
 
 
 function preload(){
@@ -74,7 +77,6 @@ function preload(){
 
 function setup(){
     createCanvas(700,1150)
-    httpGet('./cookie')
     for(let key in fruitTypes){
         fruitTypes[key].image.resize(fruitTypes[key].size,fruitTypes[key].size)
         fruitTypes[key].nextImage.resize(60,60)
@@ -91,28 +93,35 @@ async function draw(){
         case 'user':
             noLoop()
             setUser()
-            break;
+            break
         case 'menu':
             noLoop()
             menu()
-            break;
+            break
         case 'lobbySearch':
             noLoop()
             await lobbyList()
-            break;
+            break
+        case 'lobbyJoin':
+            noLoop()
+            typeLID()
+            break
         case 'lobbyCreate':
             noLoop()
             lobbySettings()
-            break;
+            break
         case 'lobbyWait':
             noLoop()
             waiting()
-            break;
+            break
         case 'game':
+            noLoop()
             await fruitGame()
-            break;
+            break
         case 'gameEnd':
-            break;
+            noLoop()
+            gameOver()
+            break
     }
 }
 
@@ -121,24 +130,28 @@ function mouseClicked(){
     switch(screen){
         case 'user':
             enterUser()
-            break;
+            break
         case 'menu':
             menuSelect()
-            break;
+            break
         case 'lobbySearch':
             lobbySelect()
-            break;
+            break
         case 'lobbyJoin':
-            break;
+            joinLID()
+            break
         case 'lobbyCreate':
             createLobby()
-            break;
+            break
         case 'lobbyWait':
             startGame()
-            break;
+            break
         case 'game':
             fruitDrop()
-            break;
+            break
+        case 'gameEnd':
+            nextGame()
+            break
     }
 }
 
@@ -262,6 +275,7 @@ function droppedFruit(x,y,type){
                 max++
             }
             score+=this.typeObj.weight
+            socket.emit('update',lobbyID,score,fruitTypeArr[random(typeIndex)])
             fruitsDropped.unshift(new droppedFruit(middle[0],middle[1],fruitTypeArr[typeIndex+1]))
             console.log(fruitsDropped,score)
         }
@@ -285,7 +299,9 @@ const setUser=()=>{
 const enterUser=()=>{
     const lName = input1.value()
     if(mouseX>width/2-65&&mouseX<width/2+65&&mouseY>height/2-30&&mouseY<height/2+10&&lName!==''){
-        select('input').remove()
+        for(let key of selectAll('input')){
+            key.remove()
+        }
         pName = lName
         screen = 'menu'
         socket.emit('userCreated',lName)
@@ -361,7 +377,6 @@ const lobbyList=async()=>{
             createText(200,refY+50,lobby[i].name,20,undefined,undefined,undefined,undefined,LEFT)
             createText(475,refY+50,lobby[i].pcount||0,20,undefined,undefined,undefined,undefined,LEFT)
             createText(550,refY+50,lobby[i].type,20,undefined,undefined,undefined,undefined,LEFT)
-            lobbyArr.push(lobby[i].id)
         }
     })
 }
@@ -379,17 +394,57 @@ const lobbySelect=()=>{
         loop()
     }
     else if(mouseX>50&&mouseX<650&&mouseY>125&&mouseY<875){
-        for(let i=0;i<9;i++){
-            let refY=200+(i*75)
-            if(mouseY>refY&&mouseY<refY+75){
-                lobbyID=lobbyArr[i]
-                screen='lobbyWait'
+        httpGet('./lobby','json',(data)=>{
+            for(let i=0;i<9;i++){
+                let refY=200+(i*75)
+                if(mouseY>refY&&mouseY<refY+75){
+                    lobbyID=data[i].id
+                    screen='lobbyWait'
+                    socket.emit('lobbyJoin',lobbyID)
+                }
             }
-        }
+        })
         loop()
     }
     else if(mouseX>width-255,mouseX<width-205,mouseY>50,mouseY<100){
         loop()
+    }
+}
+
+const typeLID=()=>{
+    createBack()
+    createRect(100,170,300,210,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
+    createText(250,100,'Join Game by ID',50)
+    createText(150,150,'Lobby ID:',30)
+    createText(200,200,'Join Lobby',30)
+
+    input3 = createInput().position(260,200)
+    input3.attribute('placeholder',`enter lobby ID`)
+    input3.addClass('input')
+}
+
+const joinLID=()=>{
+    if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
+        for(let key of selectAll('input')){
+            key.remove()
+        }
+        screen='menu'
+        loop()
+    }
+    else if(mouseX>100&&mouseY>170&&mouseX<300&&mouseY<210){
+        httpGet(`./lobby/${input3.value()}`,'json',(data)=>{
+            if(data.length===0||input3.value()===''){
+                createText(width/2,250,'Invalid ID',20,undefined,[255,0,0])
+            }
+            else{
+                for(let key of selectAll('input')){
+                    key.remove()
+                }
+                screen='lobbyWait'
+                lobbyID=data[0].id
+                socket.emit('lobbyJoin',lobbyID)
+            }
+        })
     }
 }
 
@@ -414,8 +469,11 @@ const lobbySettings=()=>{
 
 const createLobby=()=>{
     if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
-        select('input').remove()
+        for(let key of selectAll('input')){
+            key.remove()
+        }
         screen='lobbySearch'
+        loop()
     }
     else if(mouseX>240&&mouseX<400&&mouseY>175&&mouseY<210){
         createRect(250,175,410,210,undefined,[184, 141, 62],undefined,0)
@@ -443,7 +501,7 @@ const createLobby=()=>{
                 break;
         }
     }
-    else if(mouseX>100&&mouseX<300&&mouseY>280&&mouseY<330){
+    else if(mouseX>100&&mouseX<300&&mouseY>280&&mouseY<330&&lobbyType==='comp'){
         let lName = ''
         input2.value()===''?
             lName=input2.attribute('placeholder'):
@@ -452,21 +510,61 @@ const createLobby=()=>{
             key.remove()
         }
         screen= 'lobbyWait'
+        host=true
         httpPost('./lobby','json',{name:lName,type:lobbyType,public:public,player:pName})
-        .then(data=>console.log(data))
-        loop()
+        .then(data=>{
+            console.log(data)
+            lobbyID=data[0].id
+            socket.emit('lobbyJoin',data[0].id)
+        })
+        setTimeout(()=>{loop()}, 1000);
+    }
+    else if(lobbyType==='coop'){
+        createText(width/2,350,'coop is work in progress',20,undefined,[255,0,0])
     }
 }
 
 const waiting=()=>{
+    httpGet(`./players/${lobbyID}`,'json',(data)=>{
+        console.log(data)
+        for(let i=0;i<data.length&&i<9;i++){
+            let refY=125+(i*75)
+            createLine(50,refY,650,refY,undefined,2)
+            createLine(50,refY+75,650,refY+75,undefined,2)
+            createText(200,refY+50,data[i].name,20,undefined,undefined,undefined,undefined,LEFT)
+            image(fruitTypes[Object.keys(fruitTypes)[i]].nextImage,57.5,refY+7.5)
+        }
+    })
+    httpGet(`./lobby/${lobbyID}`,'json',(data)=>{
+        createText(250,100,data[0].name,50)
+        console.log(data[0].public===false)
+        if(data[0].public===false){
+            createText(width-110,60,`(private lobby)`,20,undefined,[255,0,0])
+        }
+    })
     createBack()
     createRect(50,125,650,875,undefined,[237, 191, 107])
-    httpDo('./lobby','PUT',{player:pName,lobby:lobbyID},res=>console.log(res))
+    createRect(100,900,600,1000,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
+    createText(600,100,`lobby ID: ${lobbyID}`,30)
+    if(host===true){
+        createText(350,970,'START GAME',50,undefined,[0,0,0])
+    }
+    else{
+        createText(350,970,'waiting on host',50,undefined,[0,0,0])
+
+    }
 }
 
 const startGame=()=>{
     if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
         screen='lobbySearch'
+        host=false
+        socket.emit('lobbyLeave',lobbyID)
+        loop()
+    }
+    else if(mouseX>100&&mouseY>900&&mouseX<600&&mouseY<1000&&host===true){
+        screen='game'
+        socket.emit('startGame',lobbyID)
         loop()
     }
 }
@@ -479,12 +577,17 @@ const fruitDrop=()=>{
 }
 
 const fruitGame=async()=>{
+    createRect(0,226.75,700,0,undefined,[3, 244, 252])
     createRect(width-125,25,width-25,125,[25,25,25,25],[179,179,179],undefined,2)
     createText(width-83,50,'next',30,'arial',[255,255,255],undefined,3)
     createText(25,60,score,50,'arial',[26,255,0],[0,60,255],10,LEFT)
     image(fruitTypes[nextFruit].nextImage,width-105,55)
     createLine(0,226.75,700,226.75)
     createText(10,210,'do not overfill',20,'arial',undefined,undefined,undefined,LEFT)
+    for(let i=0;i<4&&i<otherScores.length;i++){
+        createText(width/2,i*50+25,`${i}: ${otherScores[i].name} (${otherScores[i].currp} points)`,30)
+    }
+
     if(fruitHand){
         fruitHand.show()
     }
@@ -496,7 +599,7 @@ const fruitGame=async()=>{
                 if(fruitsDropped[i].pos.y-fruitsDropped[i].r<227.75){
                     screen='gameEnd'
                 }
-            },1000)
+            },3000)
         }
     }
 
@@ -506,6 +609,23 @@ const fruitGame=async()=>{
         }
     }
     loop()
+}
+
+const gameOver=()=>{
+    createRect(width/2-100,height/2-230,width/2+100,height/2-190,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
+    createText(width/2,height/2,'GAME\nOVER',200)
+    createText(width/2,height/2-200,'Play Again',30)
+    createText(width/2-50,height/2-250,`Score: ${score}`,30,undefined,undefined,undefined,undefined,undefined,LEFT)
+    createText(width/2-100,height/2-300,`Place: ${place}`,30,undefined,undefined,undefined,undefined,LEFT)
+}
+
+const nextGame=()=>{
+    if(mouseX>width/2-100&&mouseY>height/2-230&&mouseX<width/2+100&&mouseY<height/2-190){
+        screen='menu'
+        score=0
+        place=0
+        loop()
+    }
 }
 
 const createRect=(x1,y1,x2,y2,[tlr,trr,brr,blr]=[0,0,0,0],[fr,fg,fb]=[0,0,0],[br,bg,bb]=[0,0,0],bWeight=1)=>{
@@ -548,4 +668,28 @@ socket.on('newLobby',(message)=>{
     if(screen==='lobbySearch'){
         loop()
     }
+})
+
+socket.on('lChange',()=>{
+    if(screen==='lobbyWait'){
+        console.log('lChange received')
+        setTimeout(() => {loop()}, 500);
+    }
+})
+
+socket.on('lDelete',()=>{
+    socket.emit('kickPlease',lobbyID)
+    screen='lobbySearch'
+    loop()
+})
+
+socket.on('startGame',(data)=>{
+    otherScores=[...data]
+    screen='game'
+    loop()
+})
+
+socket.on('update',(data,fruit)=>{
+    fruitsDropped.unshift(new droppedFruit(random(width),178.75,fruit))
+    otherScores=[...data]
 })
