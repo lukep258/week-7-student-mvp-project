@@ -1,4 +1,3 @@
-
 var fruitTypes = {
     cherry:{
         weight:2,
@@ -45,12 +44,20 @@ var fruitTypes = {
         size:550
     }
 }
-let max = 0
-let screen = 'menu'
 var nextFruit = {}
 var fruitHand = {}
 var fruitsDropped = []
 var score = 0
+let max = 0
+let screen = 'user'
+let pName = 'pizza'
+let lobbyType = 'comp'
+let public = true;
+let lobbyArr = []
+let input1
+let input2
+let players = []
+let lobbyID = 3
 
 
 function preload(){
@@ -63,28 +70,38 @@ function preload(){
 
 function setup(){
     createCanvas(700,1150)
+    httpGet('./cookie')
     for(let key in fruitTypes){
         fruitTypes[key].image.resize(fruitTypes[key].size,fruitTypes[key].size)
         fruitTypes[key].nextImage.resize(60,60)
     }
     fruitHand=new handyFruit(randomFruit())
     nextFruit=randomFruit()
-    noLoop()
 }
 
 
 async function draw(){  
     background(230, 176, 78)  
     switch(screen){
+        case 'user':
+            noLoop()
+            setUser()
+            break;
         case 'menu':
+            noLoop()
             menu()
             break;
         case 'lobbySearch':
+            noLoop()
             await lobbyList()
             break;
         case 'lobbyCreate':
+            noLoop()
+            lobbySettings()
             break;
         case 'lobbyWait':
+            noLoop()
+            waiting()
             break;
         case 'game':
             await fruitGame()
@@ -97,17 +114,22 @@ async function draw(){
 
 function mouseClicked(){
     switch(screen){
+        case 'user':
+            enterUser()
+            break;
         case 'menu':
             menuSelect()
-            noLoop()
             break;
         case 'lobbySearch':
+            lobbySelect()
             break;
         case 'lobbyJoin':
             break;
         case 'lobbyCreate':
+            createLobby()
             break;
         case 'lobbyWait':
+            startGame()
             break;
         case 'game':
             fruitDrop()
@@ -245,7 +267,33 @@ const randomFruit=()=>{
     return Object.keys(fruitTypes)[Math.round(random(max))]
 }
 
+const setUser=()=>{
+    createRect(width/2-65,height/2-30,width/2+65,height/2+10,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
+    createText(width/2,height/2-100,'Enter Username:',50)
+    createText(width/2,height/2,'Continue',30)
+
+    input1 = createInput().position(width/2-150,height/2)
+    input1.attribute('placeholder',`username`)
+    input1.addClass('input')
+}
+
+const enterUser=()=>{
+    const lName = input1.value()
+    if(mouseX>width/2-65&&mouseX<width/2+65&&mouseY>height/2-30&&mouseY<height/2+10&&lName!==''){
+        select('input').remove()
+        pName = lName
+        screen = 'menu'
+        httpPost(`./cookie`,'json',{name:lName},result=>console.log(result))
+        loop()
+    }
+    else if(mouseX>width/2-65&&mouseX<width/2+65&&mouseY>height/2-30&&mouseY<height/2+10){
+        createText(width/2,height/2+50,'Enter a username',20,undefined,[255,0,0])
+    }
+}
+
 const menu=()=>{
+    createRect(0,0,width,height/3,undefined,[0, 208, 255])
+    strokeWeight(1)
     textSize(50)
     fill(0)
     textFont('Berthold Akzidenz Condensed')
@@ -281,20 +329,137 @@ const menuSelect=()=>{
 }
 
 const lobbyList=async()=>{
-    let lobby=[]
+    createBack()
+    createRect(50,125,650,875,undefined,[237, 191, 107])
+    createRect(50,125,650,200,undefined,[199, 147, 52])
+    createRect(width-200,50,width-50,100,undefined,[161, 242, 138],undefined,)
+    createText(70,175,'LobbyID',20,undefined,undefined,undefined,undefined,LEFT)
+    createText(250,100,'Lobbies',50)
+    createText(200,175,'Name',20,undefined,undefined,undefined,undefined,LEFT)
+    createText(450,175,'Players',20,undefined,undefined,undefined,undefined,LEFT)
+    createText(550,175,'Type',20,undefined,undefined,undefined,undefined,LEFT)
+    createText(width-125,85,'Create Lobby',20,undefined,undefined,undefined,undefined,CENTER)
     await httpGet('/lobby','json',(res)=>{
-        lobby=[...res]
-    })
-    .then(()=>{
-        for(let i=0;i<lobby.length;i++){
-            console.log(i)
-            stroke(0)
-            strokeWeight(10)
-            line(0,226.75+(i*100),700,226.75+(i*100))
-            line(0,226.75+100+(i*100),700,226.75+100+(i*100))
+        let lobby=[...res]
+        console.log(lobby)
+        for(let i=0,j=0;i<lobby.length&&j<9;i++,j++){
+            if(lobby[i].public===false){
+                j--
+                continue
+            }
+            let refY=200+(j*75)
+            createLine(50,refY,650,refY,undefined,2)
+            createLine(50,refY+75,650,refY+75,undefined,2)
+            createText(100,refY+50,lobby[i].id,30,undefined,undefined,undefined,undefined,LEFT)
+            createText(200,refY+50,lobby[i].name,20,undefined,undefined,undefined,undefined,LEFT)
+            createText(475,refY+50,lobby[i].pcount||0,20,undefined,undefined,undefined,undefined,LEFT)
+            createText(550,refY+50,lobby[i].type,20,undefined,undefined,undefined,undefined,LEFT)
+            lobbyArr.push(lobby[i].id)
         }
     })
-    
+    setTimeout(() => {loop()}, 3000);
+}
+
+const lobbySelect=()=>{
+    console.log(mouseX,mouseY)
+    if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
+        console.log('going to menu',mouseX,mouseY)
+        screen='menu'
+        loop()
+    }
+    else if(mouseX>width-200&&mouseX<width-50&&mouseY>50&&mouseY<100){
+        console.log('going to lobby creation',mouseX,mouseY)
+        screen='lobbyCreate'
+        loop()
+    }
+    else if(mouseX>50&&mouseX<650&&mouseY>125&&mouseY<875){
+        for(let i=0;i<9;i++){
+            let refY=200+(i*75)
+            if(mouseY>refY&&mouseY<refY+75){
+                lobbyID=lobbyArr[i]
+                screen='lobbyWait'
+            }
+        }
+        loop()
+    }
+}
+
+const lobbySettings=()=>{
+    createBack()
+    createRect(250,175,410,210,undefined,[184, 141, 62],undefined,0)
+    createRect(420,175,580,210,undefined,[230, 176, 78],undefined,0)
+    createRect(260,225,295,260,undefined,[255,255,255])
+    createRect(100,280,300,330,[25,25,25,25],[255, 47, 36],[0, 138, 9],2)
+    createText(330,200,'competitive',30)
+    createText(500,200,'cooperative',30)
+    createText(250,100,'Create Game',50)
+    createText(150,150,'Lobby Name:',30)
+    createText(140,200,'Game Type:',30)
+    createText(155,250,'Private Lobby:',30)
+    createText(200,315,'Create Lobby',30)
+
+    input2 = createInput().position(260,200)
+    input2.attribute('placeholder',`${pName}s lobby`)
+    input2.addClass('input')
+}
+
+const createLobby=()=>{
+    if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
+        select('input').remove()
+        screen='lobbySearch'
+    }
+    else if(mouseX>240&&mouseX<400&&mouseY>175&&mouseY<210){
+        createRect(250,175,410,210,undefined,[184, 141, 62],undefined,0)
+        createRect(420,175,580,210,undefined,[230, 176, 78],undefined,0)
+        createText(330,200,'competitive',30)
+        createText(500,200,'cooperative',30)
+        lobbyType='comp'
+    }
+    else if(mouseX>420&&mouseX<580&&mouseY>175&&mouseY<210){
+        createRect(250,175,410,210,undefined,[230, 176, 78],undefined,0)
+        createRect(420,175,580,210,undefined,[184, 141, 62],undefined,0)
+        createText(330,200,'competitive',30)
+        createText(500,200,'cooperative',30)
+        lobbyType='coop'
+    }
+    else if(mouseX>260&&mouseX<295&&mouseY>225&&mouseY<260){
+        switch(public){
+            case false:
+                createRect(260,225,295,260,undefined,[255,255,255])
+                public = true
+                break;
+            case true:
+                createText(277,253,'X',30)
+                public = false
+                break;
+        }
+    }
+    else if(mouseX>100&&mouseX<300&&mouseY>280&&mouseY<330){
+        let lName = ''
+        input2.value()===''?
+            lName=input2.attribute('placeholder'):
+            lName=input2.value()
+        for(let key of selectAll('input')){
+            key.remove()
+        }
+        screen= 'lobbyWait'
+        httpPost('./lobby','json',{name:lName,type:lobbyType,public:public,player:pName})
+        .then(data=>console.log(data))
+        loop()
+    }
+}
+
+const waiting=()=>{
+    createBack()
+    createRect(50,125,650,875,undefined,[237, 191, 107])
+    httpDo('./lobby','PUT',{player:pName,lobby:lobbyID},res=>console.log(res))
+}
+
+const startGame=()=>{
+    if(mouseX>20&&mouseX<70&&mouseY>20&&mouseY<70){
+        screen='lobbySearch'
+        loop()
+    }
 }
 
 const fruitDrop=()=>{
@@ -305,25 +470,12 @@ const fruitDrop=()=>{
 }
 
 const fruitGame=async()=>{
-    fill(179, 179, 179)
-    strokeWeight(2)
-    stroke(0)
-    rect(width-125,25,100,100,25,25,25,25)
-    textSize(30)
-    fill(255)
-    stroke(0)
-    strokeWeight(3)
-    text('next',width-113,50)
-    textSize(50)
-    fill(26, 255, 0)
-    stroke(0, 60, 255)
-    strokeWeight(10)
-    textFont('arial')
-    text(score,25,60)
+    createRect(width-125,25,width-25,125,[25,25,25,25],[179,179,179],undefined,2)
+    createText(width-83,50,'next',30,'arial',[255,255,255],undefined,3)
+    createText(25,60,score,50,'arial',[26,255,0],[0,60,255],10,LEFT)
     image(fruitTypes[nextFruit].nextImage,width-105,55)
-    stroke(0)
-    strokeWeight(1)
-    line(0,226.75,700,226.75)
+    createLine(0,226.75,700,226.75)
+    createText(10,210,'do not overfill',20,'arial',undefined,undefined,undefined,LEFT)
     if(fruitHand){
         fruitHand.show()
     }
@@ -345,4 +497,39 @@ const fruitGame=async()=>{
         }
     }
     loop()
+}
+
+const createRect=(x1,y1,x2,y2,[tlr,trr,brr,blr]=[0,0,0,0],[fr,fg,fb]=[0,0,0],[br,bg,bb]=[0,0,0],bWeight=1)=>{
+    fill(fr,fg,fb)
+    stroke(br,bg,bb)
+    strokeWeight(bWeight)
+    rect(x1,y1,(x2-x1),(y2-y1),tlr,trr,brr,blr)
+}
+
+const createTri=(x1,y1,x2,y2,x3,y3,[fr,fg,fb]=[0,0,0],[br,bg,bb]=[0,0,0],bWeight=0)=>{
+    fill(fr,fg,fb)
+    stroke(br,bg,bb)
+    strokeWeight(bWeight)
+    triangle(x1,y1,x2,y2,x3,y3)
+}
+
+const createText=(x1,y1,textContent,fontSize=1,fontFamily='arial',[fr,fg,fb]=[0,0,0],[br,bg,bb]=[0,0,0],bWeight=0,align=CENTER)=>{
+    fill(fr,fg,fb)
+    stroke(br,bg,bb)
+    strokeWeight(bWeight)
+    textSize(fontSize)
+    textFont(fontFamily)
+    textAlign(align)
+    text(textContent,x1,y1)
+}
+
+const createLine=(x1,y1,x2,y2,[br,bg,bb]=[0,0,0],bWeight=1)=>{
+    stroke(br,bg,bb)
+    strokeWeight(bWeight)
+    line(x1,y1,x2,y2)
+}
+
+const createBack=()=>{
+    createRect(20,20,70,70,undefined,[207,207,207])
+    createTri(25,45,55,25,55,65)
 }

@@ -4,32 +4,33 @@ drop table if exists players;
 drop table if exists teams;
 drop table if exists curr_lobby;
 
+create table curr_lobby(
+    id serial primary key,
+    name varchar,
+    pCount integer,
+    public boolean,
+    type varchar
+);
+create table players(
+    id serial primary key,
+    name varchar,
+    sessID integer,
+    lID integer references curr_lobby(id)
+);
+create table teams(
+    id serial primary key,
+    name varchar,
+    lID integer references curr_lobby(id)
+);
 create table comp_lb (
     id serial primary key,
     score integer,
-    pName varchar,
-    rank integer
+    rank integer,
+    pID integer references players(id) 
 );
-create table coop_lb{
+create table coop_lb(
     id serial primary key,
     score integer,
-    tName varchar,
-    rank integer
-};
-create table players{
-    id serial primary key,
-    name varchar,
-    curr_lobby_id integer references curr_lobby(id),
-    comp_lb_id integer references comp_lb(id)
-};
-create table teams{
-    id serial primary key,
-    name varchar,
-    curr_lobby_id integer references curr_lobby(id),
-    comp_lb_id integer references coop_lb(id)
-};
-create table curr_lobby{
-    id serial primary key,
-    name varchar,
-    pCount integer
-};
+    rank integer,
+    tID integer references teams(id)
+);

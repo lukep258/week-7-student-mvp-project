@@ -8,11 +8,13 @@ create table curr_lobby(
     id serial primary key,
     name varchar,
     pCount integer,
+    public boolean,
     type varchar
 );
 create table players(
     id serial primary key,
     name varchar,
+    sessID integer,
     lID integer references curr_lobby(id)
 );
 create table teams(
