@@ -15,6 +15,7 @@ const io = new Server(server)
 app.use(cors())
 app.use(express.json())
 
+
 const init=()=>{
     app.use(express.static('public'))
     app.use(session({
@@ -33,7 +34,6 @@ const init=()=>{
 
     server.listen(port,()=>{console.log(`listening on ${port}`)})
 }
-
 
 //express routes
 const getData=()=>{
@@ -93,9 +93,6 @@ const patchData=()=>{
         }
     })
 } */
-
-
-
 
 
 //socket event handling
