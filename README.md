@@ -1,5 +1,16 @@
 # week-7-student-mvp-project
 
+Concept:
+
+Popular Suika Game implemented as a multiplayer game.
+
+
+Tech & Library:
+1. P5 - art rendering
+2. Socket.IO - TCP websocket connection
+3. Express - server
+4. PostgreSQL - database
+
 
 Schema:
 1. current lobby has serial id, name, player count, public, type, and host values
